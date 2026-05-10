@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NAI Artist WebUI</title>
+  <style>
+    :root {
+      --bg: #f5efe6;
+      --panel: rgba(255, 251, 245, 0.92);
+      --ink: #211a14;
+      --muted: #68594b;
+      --line: rgba(33, 26, 20, 0.12);
+      --accent: #b34f2e;
+      --accent-2: #284a3d;
+      --shadow: 0 20px 50px rgba(60, 33, 18, 0.12);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(179, 79, 46, 0.18), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(40, 74, 61, 0.16), transparent 28%),
+        linear-gradient(135deg, #f8f2e7 0%, #f1e5d4 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-main {
+      padding: 28px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(179, 79, 46, 0.08);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 16px 0 8px;
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .hero-side {
+      padding: 24px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid var(--line);
+    }
+
+    .stat small {
+      display: block;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(460px, 0.95fr) minmax(420px, 1.05fr);
+      gap: 18px;
+    }
+
+    .column {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .section {
+      padding: 22px;
+    }
+
+    .section h2 {
+      margin: 0 0 14px;
+      font-size: 19px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3 {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .field,
+    .stack {
+      display: grid;
+      gap: 7px;
+    }
+
+    .stack { grid-column: 1 / -1; }
+
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid rgba(33, 26, 20, 0.14);
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--ink);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font: inherit;
+      resize: vertical;
+    }
+
+    textarea {
+      min-height: 124px;
+      line-height: 1.55;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .toggle input {
+      width: auto;
+      margin: 0;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .primary { background: var(--accent); color: #fff5ef; box-shadow: 0 10px 25px rgba(179, 79, 46, 0.28); }
+    .secondary { background: var(--accent-2); color: #eef6f2; box-shadow: 0 10px 25px rgba(40, 74, 61, 0.2); }
+    .ghost { background: rgba(33, 26, 20, 0.06); color: var(--ink); }
+
+    .result-box {
+      min-height: 146px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.76);
+      white-space: pre-wrap;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 13px;
+    }
+
+    .preview {
+      width: 100%;
+      min-height: 420px;
+      border: 1px dashed rgba(33, 26, 20, 0.15);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(246,238,229,0.8));
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .preview img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .error {
+      color: #9f1e1e;
+      font-weight: 700;
+    }
+
+    @media (max-width: 1180px) {
+      .hero,
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .shell { padding: 16px; }
+      .grid,
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="panel hero-main">
+        <div class="eyebrow">NAI Artist WebUI</div>
+        <h1>提示词工作台</h1>
+        <p class="lead">不启动机器人，直接围绕 config 中的提示词字段调试。你可以编辑 base tags / negative tags / 模式风格串，查看翻译后的 tags、最终 prompt，并即时预览出图。</p>
+      </div>
+      <div class="panel hero-side">
+        <div class="stat"><small>当前模式</small><strong id="hero-mode">photo</strong></div>
+        <div class="stat"><small>NAI 模型</small><strong id="hero-model">-</strong></div>
+        <div class="stat"><small>翻译模型</small><strong id="hero-translate-model">-</strong></div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="column">
+        <div class="panel section">
+          <h2>配置提示词</h2>
+          <div class="grid">
+            <div class="stack">
+              <label for="baseTags">base_tags</label>
+              <textarea id="baseTags"></textarea>
+            </div>
+            <div class="stack">
+              <label for="negativeTags">negative_tags</label>
+              <textarea id="negativeTags"></textarea>
+            </div>
+            <div class="stack">
+              <label for="photoStyleTags">photo.style_tags</label>
+              <textarea id="photoStyleTags"></textarea>
+            </div>
+            <div class="stack">
+              <label for="drawingStyleTags">drawing.style_tags</label>
+              <textarea id="drawingStyleTags"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel section">
+          <h2>参数与输入</h2>
+          <div class="grid">
+            <div class="field">
+              <label for="mode">mode</label>
+              <select id="mode">
+                <option value="photo">photo</option>
+                <option value="drawing">drawing</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="configPath">config 文件</label>
+              <input id="configPath" readonly />
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top: 14px;">
+            <div class="field">
+              <label for="modeWidth">width</label>
+              <input id="modeWidth" type="number" min="64" step="64" />
+            </div>
+            <div class="field">
+              <label for="modeHeight">height</label>
+              <input id="modeHeight" type="number" min="64" step="64" />
+            </div>
+            <div class="field">
+              <label for="modeSteps">steps</label>
+              <input id="modeSteps" type="number" min="1" max="28" />
+            </div>
+          </div>
+          <div class="stack" style="margin-top: 14px;">
+            <label for="description">自然语言描述</label>
+            <textarea id="description" placeholder="例如：坐在窗边看雨，手里捧着热可可，表情发呆"></textarea>
+          </div>
+          <div class="toolbar">
+            <label class="toggle"><input id="saveToggle" type="checkbox" /> 运行前先覆盖保存到 config.toml</label>
+            <button class="ghost" id="reloadConfigBtn">重新读取配置</button>
+            <button class="ghost" id="saveConfigBtn">仅保存配置</button>
+            <button class="secondary" id="translateBtn">只看翻译与最终 Prompt</button>
+            <button class="primary" id="generateBtn">直接出图预览</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="column">
+        <div class="panel section">
+          <h2>中间结果</h2>
+          <div class="stack">
+            <label for="translatedTags">翻译后的 tags</label>
+            <div id="translatedTags" class="result-box"></div>
+          </div>
+          <div class="stack" style="margin-top: 14px;">
+            <label for="finalPrompt">最终发送给 NAI 的完整 prompt</label>
+            <div id="finalPrompt" class="result-box"></div>
+          </div>
+        </div>
+
+        <div class="panel section">
+          <h2>结果预览</h2>
+          <div class="preview" id="previewBox">
+            <div class="status">尚未出图</div>
+          </div>
+          <div class="toolbar" style="margin-top: 14px;">
+            <div class="status" id="statusText">等待操作</div>
+            <button class="ghost" id="copyPromptBtn">复制最终 Prompt</button>
+          </div>
+          <div class="status error" id="errorText"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      config: null,
+    };
+
+    const el = {
+      mode: document.getElementById('mode'),
+      configPath: document.getElementById('configPath'),
+      baseTags: document.getElementById('baseTags'),
+      negativeTags: document.getElementById('negativeTags'),
+      photoStyleTags: document.getElementById('photoStyleTags'),
+      drawingStyleTags: document.getElementById('drawingStyleTags'),
+      modeWidth: document.getElementById('modeWidth'),
+      modeHeight: document.getElementById('modeHeight'),
+      modeSteps: document.getElementById('modeSteps'),
+      description: document.getElementById('description'),
+      translatedTags: document.getElementById('translatedTags'),
+      finalPrompt: document.getElementById('finalPrompt'),
+      previewBox: document.getElementById('previewBox'),
+      statusText: document.getElementById('statusText'),
+      errorText: document.getElementById('errorText'),
+      heroMode: document.getElementById('hero-mode'),
+      heroModel: document.getElementById('hero-model'),
+      heroTranslateModel: document.getElementById('hero-translate-model'),
+      saveToggle: document.getElementById('saveToggle'),
+      reloadConfigBtn: document.getElementById('reloadConfigBtn'),
+      saveConfigBtn: document.getElementById('saveConfigBtn'),
+      translateBtn: document.getElementById('translateBtn'),
+      generateBtn: document.getElementById('generateBtn'),
+      copyPromptBtn: document.getElementById('copyPromptBtn'),
+    };
+
+    function getOverrides() {
+      return {
+        base_tags: el.baseTags.value,
+        negative_tags: el.negativeTags.value,
+        photo_style_tags: el.photoStyleTags.value,
+        drawing_style_tags: el.drawingStyleTags.value,
+        photo_width: Number(el.mode === 'photo' ? el.modeWidth.value : el.modeWidth.value),
+        photo_height: Number(el.modeHeight.value),
+        photo_steps: Number(el.modeSteps.value),
+        drawing_width: Number(el.modeWidth.value),
+        drawing_height: Number(el.modeHeight.value),
+        drawing_steps: Number(el.modeSteps.value),
+      };
+    }
+
+    function getScopedOverrides() {
+      const mode = el.mode.value;
+      const common = {
+        base_tags: el.baseTags.value,
+        negative_tags: el.negativeTags.value,
+        photo_style_tags: el.photoStyleTags.value,
+        drawing_style_tags: el.drawingStyleTags.value,
+      };
+      if (mode === 'photo') {
+        return {
+          ...common,
+          photo_width: Number(el.modeWidth.value),
+          photo_height: Number(el.modeHeight.value),
+          photo_steps: Number(el.modeSteps.value),
+        };
+      }
+      return {
+        ...common,
+        drawing_width: Number(el.modeWidth.value),
+        drawing_height: Number(el.modeHeight.value),
+        drawing_steps: Number(el.modeSteps.value),
+      };
+    }
+
+    function syncModeFields() {
+      if (!state.config) return;
+      const mode = el.mode.value;
+      const section = mode === 'photo' ? state.config.photo : state.config.drawing;
+      el.modeWidth.value = section.width;
+      el.modeHeight.value = section.height;
+      el.modeSteps.value = section.steps;
+      el.heroMode.textContent = mode;
+    }
+
+    function fillConfig(data) {
+      state.config = data;
+      el.configPath.value = data.configPath;
+      el.baseTags.value = data.character.baseTags;
+      el.negativeTags.value = data.character.negativeTags;
+      el.photoStyleTags.value = data.photo.styleTags;
+      el.drawingStyleTags.value = data.drawing.styleTags;
+      el.heroModel.textContent = data.api.model || '-';
+      el.heroTranslateModel.textContent = data.api.translateModel || '(fallback utils_small)';
+      syncModeFields();
+    }
+
+    function setBusy(isBusy, text) {
+      [el.reloadConfigBtn, el.saveConfigBtn, el.translateBtn, el.generateBtn].forEach(btn => btn.disabled = isBusy);
+      el.statusText.textContent = text;
+    }
+
+    function renderResult(data, withImage) {
+      el.translatedTags.textContent = data.translatedTags || '(空)';
+      el.finalPrompt.textContent = data.finalPrompt || '(空)';
+      el.errorText.textContent = '';
+
+      if (withImage && data.imageDataUrl) {
+        el.previewBox.innerHTML = `<img alt="preview" src="${data.imageDataUrl}" />`;
+      } else if (!withImage) {
+        el.previewBox.innerHTML = '<div class="status">未请求出图，仅展示翻译和最终 Prompt</div>';
+      }
+    }
+
+    async function api(url, options = {}) {
+      const resp = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
+        ...options,
+      });
+      const text = await resp.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!resp.ok) {
+        throw new Error(data.detail || `HTTP ${resp.status}`);
+      }
+      return data;
+    }
+
+    async function loadConfig() {
+      setBusy(true, '正在读取配置...');
+      try {
+        const data = await api('/api/config');
+        fillConfig(data);
+        setBusy(false, '配置已加载');
+      } catch (error) {
+        el.errorText.textContent = String(error.message || error);
+        setBusy(false, '读取配置失败');
+      }
+    }
+
+    async function maybeSaveBeforeRun() {
+      if (!el.saveToggle.checked) return;
+      await api('/api/config/save', {
+        method: 'POST',
+        body: JSON.stringify({ overrides: getScopedOverrides() }),
+      });
+      await loadConfig();
+    }
+
+    async function runTranslate() {
+      setBusy(true, '正在翻译并构建最终 Prompt...');
+      try {
+        await maybeSaveBeforeRun();
+        const data = await api('/api/translate', {
+          method: 'POST',
+          body: JSON.stringify({
+            mode: el.mode.value,
+            description: el.description.value,
+            overrides: getScopedOverrides(),
+          }),
+        });
+        renderResult(data, false);
+        setBusy(false, '翻译完成');
+      } catch (error) {
+        el.errorText.textContent = String(error.message || error);
+        setBusy(false, '翻译失败');
+      }
+    }
+
+    async function runGenerate() {
+      setBusy(true, '正在调用 NAI 生成图片...');
+      try {
+        await maybeSaveBeforeRun();
+        const data = await api('/api/generate', {
+          method: 'POST',
+          body: JSON.stringify({
+            mode: el.mode.value,
+            description: el.description.value,
+            overrides: getScopedOverrides(),
+          }),
+        });
+        renderResult(data, true);
+        setBusy(false, '出图完成');
+      } catch (error) {
+        el.errorText.textContent = String(error.message || error);
+        setBusy(false, '出图失败');
+      }
+    }
+
+    async function saveConfigOnly() {
+      setBusy(true, '正在保存配置...');
+      try {
+        const data = await api('/api/config/save', {
+          method: 'POST',
+          body: JSON.stringify({ overrides: getScopedOverrides() }),
+        });
+        fillConfig(data);
+        setBusy(false, '配置已写回 TOML');
+      } catch (error) {
+        el.errorText.textContent = String(error.message || error);
+        setBusy(false, '保存失败');
+      }
+    }
+
+    el.mode.addEventListener('change', syncModeFields);
+    el.reloadConfigBtn.addEventListener('click', loadConfig);
+    el.translateBtn.addEventListener('click', runTranslate);
+    el.generateBtn.addEventListener('click', runGenerate);
+    el.saveConfigBtn.addEventListener('click', saveConfigOnly);
+    el.copyPromptBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(el.finalPrompt.textContent || '');
+        el.statusText.textContent = '最终 Prompt 已复制';
+      } catch {
+        el.statusText.textContent = '复制失败';
+      }
+    });
+
+    loadConfig();
+  </script>
+</body>
+</html>
