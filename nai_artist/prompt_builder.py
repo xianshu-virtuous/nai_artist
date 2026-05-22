@@ -6,8 +6,7 @@
 from __future__ import annotations
 
 from src.app.plugin_system.api import llm_api
-from src.app.plugin_system.types import LLMPayload, ROLE, TaskType, Text
-from src.kernel.llm import ModelSet
+from src.app.plugin_system.types import LLMPayload, ModelSet, ROLE, TaskType, Text
 from src.kernel.logger import get_logger
 
 logger = get_logger("nai_artist")

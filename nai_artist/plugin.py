@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 
-from src.core.components import BasePlugin, register_plugin
+from src.app.plugin_system.base import BasePlugin, register_plugin
 from src.kernel.logger import get_logger
 
 from .action import ShareVisualAction
@@ -43,17 +43,17 @@ class NaiArtistPlugin(BasePlugin):
 
     async def on_plugin_loaded(self) -> None:
         """插件加载时注册 system reminder 并确保缓存目录存在。"""
-        from src.core.prompt import get_system_reminder_store
+        from src.app.plugin_system.api import prompt_api
 
         if isinstance(self.config, NaiArtistConfig) and not self.config.plugin.enabled:
             logger.info("nai_artist 已通过配置禁用，跳过 reminder 注册")
             return
 
-        get_system_reminder_store().set(
-            bucket=_REMINDER_BUCKET,
-            name=_REMINDER_NAME,
-            content=_REMINDER_CONTENT,
-        )
+        prompt_api.add_system_reminder(
+    bucket=_REMINDER_BUCKET,
+    name=_REMINDER_NAME,
+    content=_REMINDER_CONTENT,
+)
         logger.debug("nai_artist actor reminder 已注册")
 
         if isinstance(self.config, NaiArtistConfig):
@@ -65,5 +65,5 @@ class NaiArtistPlugin(BasePlugin):
         """插件卸载时移除 system reminder。"""
         from src.core.prompt import get_system_reminder_store
 
-        get_system_reminder_store().delete(_REMINDER_BUCKET, _REMINDER_NAME)
+        prompt_api.remove_system_reminder(_REMINDER_BUCKET, _REMINDER_NAME)
         logger.debug("nai_artist actor reminder 已移除")

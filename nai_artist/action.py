@@ -13,9 +13,9 @@ from src.app.plugin_system.api.service_api import get_service
 from src.core.components.base.action import BaseAction
 from src.kernel.logger import get_logger
 
-from .config import NaiArtistConfig
-from .prompt_builder import translate_to_nai_tags
-from .service import NaiArtistService
+from src.app.plugin_system.api.send_api import send_image
+from src.app.plugin_system.api.service_api import get_service
+from src.app.plugin_system.base import BaseAction
 
 logger = get_logger("nai_artist")
 
