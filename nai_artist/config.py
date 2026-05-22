@@ -54,6 +54,21 @@ class NaiArtistConfig(BaseConfig):
                 "留空时回退到 UTILS_SMALL 任务模型。"
             ),
         )
+        max_tokens: int = Field(
+            default=100000,
+            description=(
+                "newapi 模式专用：外层 max_tokens 字段，"
+                "控制本次请求允许消耗的最大预算。换算关系：1 Anlas = 10000 tokens。"
+                "常用值：10000(1 Anlas)、50000(5 Anlas)、100000(10 Anlas)。"
+            ),
+        )
+        image_format: str = Field(
+            default="png",
+            description=(
+                "newapi 模式专用：返回图片格式，可选 \"png\" 或 \"webp\"。"
+                "其他协议模式下忽略此字段。"
+            ),
+        )
 
     @config_section("character")
     class CharacterSection(SectionBase):
@@ -115,7 +130,7 @@ class NaiArtistConfig(BaseConfig):
         """NAI 采样参数。
 
         gateway 模式下仅 scale 和 cfg_rescale 生效（步数固定 28，采样器不可选）。
-        newapi/raw_nai 模式下全部参数生效。
+        newapi/raw_nai 模式下全部参数生效（scale、sampler、seed 均会传给新平台）。
         """
 
         scale: float = Field(

@@ -16,9 +16,10 @@
 
 ```toml
 [api]
-base_url = "http://你的服务器:3000/v1"   # NewAPI 服务地址
+base_url = "http://你的服务器:3000/v1"   # NewAPI / 新平台服务地址（末尾不含斜杠）
 api_key  = "sk-xxxxxxxxxxxxxxxxxxxx"      # NewAPI 访问令牌
-model    = "nai-diffusion-4-5-full-anlas-0"
+api_mode = "newapi"                       # 新平台使用 newapi 模式
+model    = "nai-diffusion-4-5-full"       # 模型名称，可从 /v1/models 获取
 
 [character]
 # 填写角色固定外貌的 booru-style 英文 tags（逗号分隔）
@@ -45,10 +46,13 @@ negative_tags = "lowres, bad anatomy, bad hands, text, watermark, blurry"
 
 | 节 | 字段 | 默认值 | 说明 |
 |---|---|---|---|
-| `[api]` | `base_url` | `http://localhost:3000/v1` | NewAPI 服务地址 |
+| `[api]` | `base_url` | `http://localhost:3000/v1` | NewAPI / 新平台服务地址（末尾不含 `/v1` 后的斜杠） |
 | | `api_key` | `""` | NewAPI 访问令牌 |
-| | `model` | `nai-diffusion-4-5-full-anlas-0` | NAI 模型名称 |
+| | `api_mode` | `gateway` | 协议模式：`gateway` / `newapi` / `openai_image` / `raw_nai`；新平台填 `newapi` |
+| | `model` | `nai-diffusion-4-5-full` | NAI 模型名称，可通过 `/v1/models` 获取 |
 | | `timeout` | `120.0` | 请求超时（秒） |
+| | `max_tokens` | `100000` | **newapi 模式专用**：最大预算 token 数（1 Anlas = 10000 tokens） |
+| | `image_format` | `png` | **newapi 模式专用**：返回图片格式，`png` 或 `webp` |
 | `[character]` | `base_tags` | `"1girl"` | bot 默认外貌 tags；仅 `photo` 模式自动拼入 |
 | | `negative_tags` | （见默认值） | 负向 tags |
 | `[photo]` | `style_tags` | `"masterpiece, best quality, anime coloring, anime illustration, ..."` | 二次元插画风格的照片感人像/场景图附加 tags |
@@ -61,6 +65,55 @@ negative_tags = "lowres, bad anatomy, bad hands, text, watermark, blurry"
 | | `max_cache` | `100` | 最大缓存图片数 |
 | `[webui]` | `host` | `127.0.0.1` | WebUI 监听地址；`127.0.0.1` 仅本机访问，`0.0.0.0` 可监听所有网卡 |
 | | `port` | `8011` | WebUI 监听端口；如果端口冲突，改成其他未占用端口 |
+
+---
+
+## newapi 模式（新平台）适配说明
+
+将 `api_mode` 设为 `newapi` 即可接入遵循本文档协议的 NewAPI 兼容平台。
+
+### 请求协议
+
+插件会向 `base_url/chat/completions` 发送以下格式的请求：
+
+```json
+{
+  "model": "nai-diffusion-4-5-full",
+  "messages": [
+    {
+      "role": "user",
+      "content": "{\"model\":\"nai-diffusion-4-5-full\",\"prompt\":\"...\",\"negative_prompt\":\"...\",\"size\":[832,1216],\"steps\":23,\"scale\":5,\"sampler\":\"k_euler_ancestral\",\"n_samples\":1,\"image_format\":\"png\"}"
+    }
+  ],
+  "stream": false,
+  "max_tokens": 100000
+}
+```
+
+> **注意**：绘图参数走 `/v1/chat/completions`，**不**使用 `/v1/images/generations`。
+
+### 参数来源
+
+| 内层字段 | 来源配置 |
+|---|---|
+| `model` | `[api].model` |
+| `prompt` | 由 `prompt_builder` 翻译并与风格/角色 tags 拼接 |
+| `negative_prompt` | `[character].negative_tags` |
+| `size` | `[photo].width` / `[photo].height`（或 drawing 预设） |
+| `steps` | `[photo].steps`（或 drawing 预设，最大 28）|
+| `scale` | `[nai_params].scale` |
+| `sampler` | `[nai_params].sampler` |
+| `seed` | `[nai_params].seed`（0 = 随机，省略该字段） |
+| `image_format` | `[api].image_format` |
+| 外层 `max_tokens` | `[api].max_tokens` |
+
+### 响应解析
+
+插件从 `choices[0].message.content` 中提取 Markdown 格式的 data URI 图片：
+
+```
+![image_0](data:image/png;base64,...)
+```
 
 ---
 
