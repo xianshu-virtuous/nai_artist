@@ -2,7 +2,11 @@
 
 支持四种 API 协议模式：
 - gateway:      NovelAI Gateway OpenAI 兼容接口（正向 user / 负向 system Negative prompt:）
-- newapi:       BestNAI/NewAPI 中转（NAI 参数 JSON 塞进 chat completions messages）
+- newapi:       BestNAI/NewAPI 中转，兼容新平台 OpenAI-chat 接口：
+                  · 内层绘图参数 JSON（含 model / scale / sampler / seed / image_format）
+                    序列化后放入 messages[0].content
+                  · 请求体顶层携带 max_tokens（1 Anlas = 10000 tokens）
+                  · 响应从 choices[0].message.content 提取 Markdown data URI 图片
 - openai_image: 标准 OpenAI Images API（POST /v1/images/generations）
 - raw_nai:      直连 NovelAI 官方 API（POST /ai/generate-image）
 
@@ -227,23 +231,47 @@ class NaiArtistService(BaseService):
         preset: Any,
         config: "NaiArtistConfig",
     ) -> str | None:
-        """BestNAI/NewAPI 中转协议。
+        """BestNAI/NewAPI 中转协议（兼容新平台 OpenAI-chat 接口）。
 
-        把 NAI 参数 JSON 塞进 chat completions messages。
-        响应可能是 data URI（base64 内嵌）或图片 URL，两种都兼容。
+        将 NAI 绘图参数序列化为 JSON 字符串，放入 chat completions 的
+        messages[0].content 中发送。响应可能是 data URI（base64 内嵌，
+        格式为 Markdown 图片 ![image_0](data:image/...;base64,...)）或
+        图片 URL，两种都兼容。
+
+        新平台协议要点：
+        - 内层 JSON 必须包含 model 字段（与外层一致）
+        - scale / sampler / seed 等进阶参数从 nai_params 配置读取
+        - 请求体顶层需携带 max_tokens（换算关系：1 Anlas = 10000 tokens）
+        - 不要调用 /v1/images/generations，始终走 /v1/chat/completions
         """
-        nai_params = {
+        nai = config.nai_params
+
+        # 构建内层绘图参数，按文档规范填写
+        inner_params: dict[str, Any] = {
+            "model": config.api.model,
             "prompt": full_prompt,
             "negative_prompt": config.character.negative_tags,
             "size": [preset.width, preset.height],
             "steps": preset.steps,
+            "scale": nai.scale,
+            "sampler": nai.sampler,
+            "n_samples": 1,
+            "image_format": config.api.image_format,
         }
-        payload = {
+        # seed 为 0 时表示随机，按文档省略该字段（留空即随机）
+        if nai.seed != 0:
+            inner_params["seed"] = nai.seed
+
+        payload: dict[str, Any] = {
             "model": config.api.model,
-            "stream": False,
             "messages": [
-                {"role": "user", "content": json.dumps(nai_params, ensure_ascii=False)}
+                {
+                    "role": "user",
+                    "content": json.dumps(inner_params, ensure_ascii=False),
+                }
             ],
+            "stream": False,
+            "max_tokens": config.api.max_tokens,
         }
         url = f"{config.api.base_url.rstrip('/')}/chat/completions"
 
